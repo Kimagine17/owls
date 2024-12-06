@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 4
+names: ['adult-owl', 'chick', 'egg', 'perched-owl']
+
+roboflow:
+  workspace: owls
+  project: owl-idenficiation
+  version: 2
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/owls/owl-idenficiation/dataset/2

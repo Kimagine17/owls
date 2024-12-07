@@ -222,7 +222,7 @@ def train(hyp, opt, device, callbacks):
     else:
         model = Model(cfg, ch=3, nc=nc, anchors=hyp.get("anchors")).to(device)  # create
     amp = check_amp(model)  # check AMP
-
+#TODO KIM look into what check_amp does and is
     # Freeze
     freeze = [f"model.{x}." for x in (freeze if len(freeze) > 1 else range(freeze[0]))]  # layers to freeze
     for k, v in model.named_parameters():
@@ -353,6 +353,7 @@ def train(hyp, opt, device, callbacks):
     results = (0, 0, 0, 0, 0, 0, 0)  # P, R, mAP@.5, mAP@.5-.95, val_loss(box, obj, cls)
     scheduler.last_epoch = start_epoch - 1  # do not move
     scaler = torch.cuda.amp.GradScaler(enabled=amp)
+    #todo: kim get rid of the scaler? Or figure out how it's being used distributed ddp
     stopper, stop = EarlyStopping(patience=opt.patience), False
     compute_loss = ComputeLoss(model)  # init loss class
     callbacks.run("on_train_start")
@@ -538,6 +539,9 @@ def train(hyp, opt, device, callbacks):
         callbacks.run("on_train_end", last, best, epoch, results)
 
     torch.cuda.empty_cache()
+    #TODO KIM
+    #torch.mps.empty_cache()
+    #replace the other cuda calls with mps as well
     return results
 
 

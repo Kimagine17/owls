@@ -1,6 +1,6 @@
-train: ../train/images
-val: ../valid/images
-test: ../test/images
+train: /Users/kimberly/Desktop/cs474/owlss/yolov5/train/images
+val: /Users/kimberly/Desktop/cs474/owlss/yolov5/valid/images
+test: /Users/kimberly/Desktop/cs474/owlss/yolov5/test/images
 
 nc: 4
 names: ['adult-owl', 'chick', 'egg', 'perched-owl']

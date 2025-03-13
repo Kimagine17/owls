@@ -2,5 +2,8 @@ TODO:
 Alex:
 - get yolo running
 
+Kimberly:
+- clean up unnecessary print statements 
+
 Both:
 - figure out if we can host mongoDB privately

@@ -1,0 +1,6 @@
+TODO:
+Alex:
+- get yolo running
+
+Both:
+- figure out if we can host mongoDB privately

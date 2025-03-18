@@ -1,9 +1,14 @@
 TODO:
 Alex:
-- get yolo running
+- jsonify the output
 
 Kimberly:
-- clean up unnecessary print statements 
+- create AWS login stuff
+- create a sharable link with s3
 
-Both:
-- figure out if we can host mongoDB privately
+Almendra:
+- run yolo
+
+All:
+- think more about workflow, learn more about AWS and how we want to use buckets/ Athena/ TinyDB/ ect.
+- not forget the 3pm thursday meetings

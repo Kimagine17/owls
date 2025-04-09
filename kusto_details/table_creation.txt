@@ -1,0 +1,18 @@
+.create table owl_cam 
+(
+    owl_entry_id: int,
+    interior_owl: int,
+    perched_owl: int,
+    chick: int,
+    egg: int
+)
+
+.create table source (
+    source_id: int,
+    link: string,
+    description: string
+)
+
+.alter-merge table owl_cam (cam_time:datetime )
+
+.alter-merge table owl_cam (source_id:int)

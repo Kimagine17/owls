@@ -38,8 +38,8 @@ from pathlib import Path
 import time
 import torch
 import pygame
-from pydub import AudioSegment
-from pydub.playback import play
+#from pydub import AudioSegment
+#from pydub.playback import play
 from collections import defaultdict
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # YOLOv5 root directory
@@ -68,6 +68,8 @@ from utils.general import (
     xyxy2xywh,
 )
 from utils.torch_utils import select_device, smart_inference_mode
+from custcoConnector import CustcoConnector
+import re
 
 @smart_inference_mode()
 def run(
@@ -101,13 +103,13 @@ def run(
     dnn=False,  # use OpenCV DNN for ONNX inference
     vid_stride=1,  # video frame-rate stride
 ):
-    pygame.mixer.init()
-    sounds = defaultdict(lambda: pygame.mixer.Sound("/Users/kimberly/Desktop/cs474/owlss/yolov5/sounds/fail-234710.mp3"), {
-        "adult-owl": pygame.mixer.Sound("/Users/kimberly/Desktop/cs474/owlss/yolov5/sounds/electronic-doorbell-262895.mp3"),
-        "egg": pygame.mixer.Sound("/Users/kimberly/Desktop/cs474/owlss/yolov5/sounds/ping-82822.mp3"),
-        "perched": pygame.mixer.Sound("/Users/kimberly/Desktop/cs474/owlss/yolov5/sounds/smooth-completed-notify-starting-alert-274739.mp3"),
-        "chicks": pygame.mixer.Sound("/Users/kimberly/Desktop/cs474/owlss/yolov5/sounds/smooth-completed-notify-starting-alert-274739.mp3")
-    })
+    # pygame.mixer.init()
+    # sounds = defaultdict(lambda: pygame.mixer.Sound("/Users/kimberly/Desktop/cs474/owlss/yolov5/sounds/fail-234710.mp3"), {
+    #     "adult-owl": pygame.mixer.Sound("/Users/kimberly/Desktop/cs474/owlss/yolov5/sounds/electronic-doorbell-262895.mp3"),
+    #     "egg": pygame.mixer.Sound("/Users/kimberly/Desktop/cs474/owlss/yolov5/sounds/ping-82822.mp3"),
+    #     "perched": pygame.mixer.Sound("/Users/kimberly/Desktop/cs474/owlss/yolov5/sounds/smooth-completed-notify-starting-alert-274739.mp3"),
+    #     "chicks": pygame.mixer.Sound("/Users/kimberly/Desktop/cs474/owlss/yolov5/sounds/smooth-completed-notify-starting-alert-274739.mp3")
+    # })
 
     item_new = {}
 
@@ -163,6 +165,7 @@ def run(
         ```
     """
     source = str(source)
+    myCustcoConnector = CustcoConnector()
     save_img = not nosave and not source.endswith(".txt")  # save inference images
     is_file = Path(source).suffix[1:] in (IMG_FORMATS + VID_FORMATS)
     is_url = source.lower().startswith(("rtsp://", "rtmp://", "http://", "https://"))
@@ -263,7 +266,7 @@ def run(
                     n = (det[:, 5] == c).sum()  # detections per class
                     s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
                     if int(c) not in item_new:
-                        sounds[names[int(c)]].play() 
+                        #sounds[names[int(c)]].play() 
                         item_new[int(c)] = True
                     else:
                         item_new[int(c)] = True
@@ -333,7 +336,14 @@ def run(
                     vid_writer[i].write(im0)
 
         # Print time (inference-only)
+        temp_string = f"{s}{'' if len(det) else '(no detections), '}{dt[1].dt * 1E3:.1f}ms"
         LOGGER.info(f"{s}{'' if len(det) else '(no detections), '}{dt[1].dt * 1E3:.1f}ms")
+        #Insert into database here
+        # only do it if not "no detections"
+        to_database = parse_output(temp_string)
+        LOGGER.info(to_database)
+        
+        myCustcoConnector.insert_row(interior_owl=to_database[0], perched_owl=to_database[1], chicks=to_database[2], egg=to_database[3], source=source)
 
     # Print results
     t = tuple(x.t / seen * 1e3 for x in dt)  # speeds per image
@@ -344,6 +354,31 @@ def run(
     if update:
         strip_optimizer(weights[0])  # update model (to fix SourceChangeWarning)
 
+def parse_output(output: str):
+    # Regular expression to capture the numbers before each literal string, making adult-owl optional
+    regex = r"(?:.*(\d+)\s*adult-owl)?(?:.*?(\d+)\s*chicks)?(?:.*?(\d+)\s*eggs)?(?:.*?(\d+)\s*perched-owl)?"
+
+    # Use re.search to find the matches
+    match = re.search(regex, output)
+
+    # Check if a match was found and extract the values
+    if match:
+        adult_owl = match.group(1) if match.group(1) else None  # First capture group (adult-owl)
+        
+        # The next groups are optional
+        perched_owl = match.group(2)  # Second capture group (perched-owl, optional)
+        chicks = match.group(3)  # Third capture group (chicks, optional)
+        egg = match.group(4)  # Fourth capture group (egg, optional)
+
+        # If any value is missing, assign None
+        perched_owl = perched_owl if perched_owl else None
+        chicks = chicks if chicks else None
+        egg = egg if egg else None
+
+        print(f"{adult_owl} {perched_owl} {chicks} {egg}")
+        return [adult_owl, perched_owl, chicks, egg]
+    else:
+        return [None, None, None, None]
 
 def parse_opt():
     """

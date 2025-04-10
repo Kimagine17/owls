@@ -13,7 +13,7 @@ class CustcoConnector:
         # "password": "your_password",
         # "database": "custco"
         # }
-        file = open("custcoCredentials.json", "r")
+        file = open("./custoCredentials.json", "r")
         tempString = ""
         for line in file:
             tempString = tempString + line

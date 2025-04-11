@@ -157,9 +157,9 @@ def run(
     """
     source = str(source)
     #WHEN RUNNING ON OLD VIDEO, SET THE VIDEO START TIME HERE AND UNCOMMENT THESE THREE LINES
-    old_time_str = '2023-04-09 22:24:13'
+    old_time_str = '2023-05-09 20:32:28'
     old_time = datetime.strptime(old_time_str, '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
-    myKustoConnector = KustoConnector(counter=9000, start_time=old_time)
+    myKustoConnector = KustoConnector(counter=290, start_time=old_time)
     #WHEN RUNNING ON LIVE VIDEO, USE ONE OF THESE TWO OPTIONS. THE CSV CAN BE UPLOADED LATER (kustoconnectors only last for 15 minutes, so they can't run all night long.)
     # myKustoConnector = KustoConnector(counter=0)
     # myKustoConnector = CSVConnector(counter=0)
@@ -335,7 +335,7 @@ def run(
         LOGGER.info(to_database)
         
         # myKustoConnector.insert_row(None, interior_owl=to_database[0], perched_owl=to_database[1], chicks=to_database[2], egg=to_database[3], source=0)
-        myKustoConnector.insert_row(None, interior_owl=to_database[0], perched_owl=to_database[3], chicks=to_database[1], egg=to_database[2], source_id=0)
+        myKustoConnector.insert_row(None, interior_owl=to_database[0], perched_owl=to_database[3], chicks=to_database[1], egg=to_database[2], source_id=5)
         #correct perched, and hopefully other stuff too like interior
 
     # Print results

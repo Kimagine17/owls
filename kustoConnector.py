@@ -9,7 +9,7 @@ import io
 import csv
 from azure.identity import DefaultAzureCredential
 from azure.kusto.data import KustoConnectionStringBuilder
-
+from datetime import timedelta
 # credential = DefaultAzureCredential()
 
 # def token_callback(context):
@@ -20,6 +20,7 @@ class KustoConnector:
         self.global_counter = counter
         self.start_time = None
         self.previous = None
+        self.last_insert_time = None
         if start_time:
             self.start_time = start_time
             self.real_start_time = datetime.now(timezone.utc)
@@ -53,12 +54,25 @@ class KustoConnector:
         return virtual_now.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
     
     def insert_row(self, table_row_id, interior_owl, perched_owl, chicks, egg, source_id):
-        if all(v is None for v in [interior_owl, perched_owl, chicks, egg]):
-            print("No insertions\n")
+        current_values = [interior_owl, perched_owl, chicks, egg, source_id]
+
+        now = datetime.now(timezone.utc)
+        should_insert = False
+
+        if any(v is not None for v in current_values):
+            if self.previous != current_values:
+                should_insert = True
+            elif self.last_insert_time is None:
+                should_insert = True
+            elif (now - self.last_insert_time) >= timedelta(minutes=5):
+                should_insert = True
+
+        if not should_insert:
+            print("⏭️ Skipped insertion — no change or not enough time passed.")
             return
-        if self.previous and self.previous == [interior_owl, perched_owl, chicks, egg, source_id]:
-            return
-        self.previous = [interior_owl, perched_owl, chicks, egg, source_id]
+
+        self.previous = current_values
+        self.last_insert_time = now
         if table_row_id is None:
             table_row_id = self.global_counter
             self.global_counter += 1

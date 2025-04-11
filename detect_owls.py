@@ -38,8 +38,8 @@ from pathlib import Path
 import time
 import torch
 import pygame
-#from pydub import AudioSegment
-#from pydub.playback import play
+from datetime import datetime, timezone
+
 from collections import defaultdict
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # YOLOv5 root directory
@@ -68,7 +68,8 @@ from utils.general import (
     xyxy2xywh,
 )
 from utils.torch_utils import select_device, smart_inference_mode
-from custcoConnector import CustcoConnector
+from kustoConnector import KustoConnector
+from CSVConnector import CSVConnector
 import re
 
 @smart_inference_mode()
@@ -103,16 +104,6 @@ def run(
     dnn=False,  # use OpenCV DNN for ONNX inference
     vid_stride=1,  # video frame-rate stride
 ):
-    # pygame.mixer.init()
-    # sounds = defaultdict(lambda: pygame.mixer.Sound("/Users/kimberly/Desktop/cs474/owlss/yolov5/sounds/fail-234710.mp3"), {
-    #     "adult-owl": pygame.mixer.Sound("/Users/kimberly/Desktop/cs474/owlss/yolov5/sounds/electronic-doorbell-262895.mp3"),
-    #     "egg": pygame.mixer.Sound("/Users/kimberly/Desktop/cs474/owlss/yolov5/sounds/ping-82822.mp3"),
-    #     "perched": pygame.mixer.Sound("/Users/kimberly/Desktop/cs474/owlss/yolov5/sounds/smooth-completed-notify-starting-alert-274739.mp3"),
-    #     "chicks": pygame.mixer.Sound("/Users/kimberly/Desktop/cs474/owlss/yolov5/sounds/smooth-completed-notify-starting-alert-274739.mp3")
-    # })
-
-    item_new = {}
-
 
     """
     Runs YOLOv5 detection inference on various sources like images, videos, directories, streams, etc.
@@ -165,7 +156,13 @@ def run(
         ```
     """
     source = str(source)
-    myCustcoConnector = CustcoConnector()
+    #WHEN RUNNING ON OLD VIDEO, SET THE VIDEO START TIME HERE AND UNCOMMENT THESE THREE LINES
+    old_time_str = '2023-04-09 22:24:13'
+    old_time = datetime.strptime(old_time_str, '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
+    myKustoConnector = KustoConnector(counter=9000, start_time=old_time)
+    #WHEN RUNNING ON LIVE VIDEO, USE ONE OF THESE TWO OPTIONS. THE CSV CAN BE UPLOADED LATER (kustoconnectors only last for 15 minutes, so they can't run all night long.)
+    # myKustoConnector = KustoConnector(counter=0)
+    # myKustoConnector = CSVConnector(counter=0)
     save_img = not nosave and not source.endswith(".txt")  # save inference images
     is_file = Path(source).suffix[1:] in (IMG_FORMATS + VID_FORMATS)
     is_url = source.lower().startswith(("rtsp://", "rtmp://", "http://", "https://"))
@@ -200,7 +197,14 @@ def run(
     # Run inference
     model.warmup(imgsz=(1 if pt or model.triton else bs, 3, *imgsz))  # warmup
     seen, windows, dt = 0, [], (Profile(device=device), Profile(device=device), Profile(device=device))
+    #note: this slows down the live streams, added by kimberly
+    #WHEN RUNNING LIVE, SET FRAME_INTERVAL TO 100 or 1000 TO SLOW DOWN INTAKE
+    # frame_interval = 1
+    # frame_count = 0
     for path, im, im0s, vid_cap, s in dataset:
+        # frame_count += 1
+        # if frame_count % frame_interval != 0:
+        #     continue
         with dt[0]:
             im = torch.from_numpy(im).to(model.device)
             im = im.half() if model.fp16 else im.float()  # uint8 to fp16/32
@@ -265,19 +269,6 @@ def run(
                 for c in det[:, 5].unique():
                     n = (det[:, 5] == c).sum()  # detections per class
                     s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
-                    if int(c) not in item_new:
-                        #sounds[names[int(c)]].play() 
-                        item_new[int(c)] = True
-                    else:
-                        item_new[int(c)] = True
-                    # owl_sound.play() #"/Users/kimberly/Desktop/cs474/owlss/yolov5/sounds/electronic-doorbell-262895.mp3")
-                options = [int(x) for x in det[:,5].unique()]
-                to_pop = []
-                for i in item_new:
-                    if i not in options:
-                        to_pop.append(i)
-                for i in to_pop:
-                    item_new.pop(i)
                 # Write results
                 for *xyxy, conf, cls in reversed(det):
                     c = int(cls)  # integer class
@@ -343,7 +334,9 @@ def run(
         to_database = parse_output(temp_string)
         LOGGER.info(to_database)
         
-        myCustcoConnector.insert_row(interior_owl=to_database[0], perched_owl=to_database[1], chicks=to_database[2], egg=to_database[3], source=source)
+        # myKustoConnector.insert_row(None, interior_owl=to_database[0], perched_owl=to_database[1], chicks=to_database[2], egg=to_database[3], source=0)
+        myKustoConnector.insert_row(None, interior_owl=to_database[0], perched_owl=to_database[3], chicks=to_database[1], egg=to_database[2], source_id=0)
+        #correct perched, and hopefully other stuff too like interior
 
     # Print results
     t = tuple(x.t / seen * 1e3 for x in dt)  # speeds per image
